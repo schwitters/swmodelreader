@@ -23,15 +23,28 @@ namespace SwModelReaderCore
         public uint ChunkOffset { get; set; }
         public int StartCompressedBlock { get; set; }
         public string ChunkName { get; set; }
+        public int HeaderLength { get; set; }
 
+        public int GetLength()
+        {
+            return HeaderLength + (int)CompressedSize;
+        }
     }
     public class SwStorage
     {
         private readonly List<SwStorageChunkInfo> m_chunks = new List<SwStorageChunkInfo>();
+ 
+        private readonly uint m_header;
+        public uint Header { get { return this.m_header; } }
 
-        public uint Header { get; set; }
-        public uint Key { get; set; }
+        private readonly uint m_Key;
+        public uint Key { get {return m_Key;}}
 
+        public SwStorage(uint header, uint key)
+        {
+            this.m_header = header;
+            this.m_Key = key;
+        }
 
         public void AddChunk(SwStorageChunkInfo chunk)
         {
@@ -46,103 +59,111 @@ namespace SwModelReaderCore
     }
     public class SwModelReader : IDisposable
     {
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        static extern int memcmp(byte[] b1, byte[] b2, long count);
 
         private readonly Stream m_stream;
         private SwStorage m_storage;
-        private readonly static byte[] CHUNK_MAGIC = new byte[] { //
-		(byte) 0x8d, //
-				(byte) 0x61, //
-				(byte) 0x84,//
-				(byte) 0xa5, //
-				(byte) 0x14, //
-				(byte) 0x00, //
-				(byte) 0x06, //
-				(byte) 0x00 //
-        };
-
         public SwModelReader(Stream stream)
         {
             this.m_stream = stream;
-            m_storage = Decode(m_stream);
-
+            m_storage = Process(m_stream);
         }
 
-        private SwStorage Decode(Stream stream)
+        private SwStorage Process(Stream stream)
         {
-            SwStorage storage = new SwStorage();
-            DecodeHeader(storage);
-            DecodeChunks(storage);
+            byte[] blob = StreamHelper.ReadToEnd(m_stream);
+            int index = 0;
+            // yet unknown the first bytes
+            uint header = GetUInt(blob, index);
+            index += 4;
+
+            index += 3; // skip 3 bytes
+            // there seems to be an key for scrambling strings
+            uint key = blob[index];
+            index += 1;
+            SwStorage storage = new SwStorage(header, key);
+            for (; index < blob.Length; index++)
+            {
+                // TODO: find a way to recognize if the table of contents starts
+                SwStorageChunkInfo chunk = ReadChunk(storage, blob, index);
+                if (chunk == null)
+                {
+                    //readContentTable(blob, index);
+                    break;
+                }
+                storage.AddChunk(chunk);
+                int nextOffset = index + (int)chunk.GetLength();
+                index = nextOffset - 1; // for !
+            }
+
             return storage;
         }
 
-        private void DecodeChunks(SwStorage storage)
+
+
+        private static SwStorageChunkInfo ReadChunk(SwStorage storage, byte[] blob, int startIndex)
         {
-            //
-            byte[] blob = StreamHelper.ReadToEnd(m_stream);
-            for (int blockstart = 0; blockstart < blob.Length - CHUNK_MAGIC.Length; blockstart++)
+            // within a block before offset 0x12 the bytes are yet unknown
+            int index = startIndex + 0x12;
+
+            uint compressedSize = GetUInt(blob, index);
+            index += 4;
+
+            uint uncompressedSize = GetUInt(blob, index);
+            index += 4;
+
+            int nameSize = (int)GetUInt(blob, index);
+            index += 4;
+            int namestart = index;
+            if (namestart + nameSize > blob.Length)
             {
-                byte[] window = new byte[CHUNK_MAGIC.Length];
-                Array.Copy(blob, blockstart, window, 0, CHUNK_MAGIC.Length);
-                if (!ByteArrayCompare(CHUNK_MAGIC, window))
-                {
-                    continue;
-                }
-                storage.AddChunk(ReadChunk(storage, blob, blockstart));
+                // happens if we try to read the content table
+                return null;
             }
-        }
-
-        private static SwStorageChunkInfo ReadChunk(SwStorage storage, byte[] blob, int blockstart)
-        {
-            uint compressedSize = GetUInt(blob, blockstart + 0x12);
-
-            uint uncompressedSize = GetUInt(blob, blockstart + 0x12 + 4);
-
-            int nameSize = (int)GetUInt(blob, blockstart + 0x12 + 4 + 4);
-
-            int namestart = blockstart + 0x12 + 4 + 4 + 4;
-
-            byte[] name = blob.Skip(namestart).Take(nameSize).ToArray();
-            byte[] unrolName = new byte[name.Length];
-            for (int i = 0; i < name.Length; i++)
+            // the stream names are scrambled ;-)
+            byte[] unrolName = new byte[nameSize];
+            for (; index < namestart + nameSize; index++)
             {
-                unrolName[i] = Rol(name[i], (int)storage.Key);
+                byte unroledByte = Rol(blob[index], (int)storage.Key);
+                unrolName[index - namestart] = unroledByte;
             }
             string chunkName = Encoding.UTF8.GetString(unrolName);
-            if (string.IsNullOrWhiteSpace(chunkName))
+            if (string.IsNullOrEmpty(chunkName))
             {
                 chunkName = "un_" + Guid.NewGuid().ToString();
             }
+
             int compressedDataStart = namestart + nameSize;
-            SwStorageChunkInfo chunk = new SwStorageChunkInfo();
-
-            Debug.WriteLine("stream name {0} : start : {1:x4}, compressedSize:{2} 0x{2:x8}, uncompressedSize : {3} 0x{3:x8}",
-                new object[] { chunkName, compressedDataStart + 8, compressedSize, uncompressedSize });
-
+           
             SwStorageChunkInfo chunkInfo = new SwStorageChunkInfo();
-            chunkInfo.ChunkOffset = (uint)blockstart;
+            chunkInfo.ChunkOffset = (uint)startIndex;
             chunkInfo.CompressedSize = compressedSize;
             chunkInfo.StartCompressedBlock = compressedDataStart;
             chunkInfo.ChunkName = chunkName;
+            chunkInfo.HeaderLength = compressedDataStart - startIndex;
+
             if (uncompressedSize > 0)
             {
-                byte[] compressedData = blob.Skip(compressedDataStart).Take((int)compressedSize).ToArray();
-                byte[] uncompressedData = Inflate(compressedData, (int)uncompressedSize);
+                byte[] uncompressedData = new byte[uncompressedSize];
+                ZlibCodec inflator = new ZlibCodec();
+                inflator.InitializeInflate(false);
+                inflator.InputBuffer = blob;
+                inflator.AvailableBytesIn = (int)compressedSize;
+                inflator.AvailableBytesOut = (int)uncompressedSize;
+                inflator.NextIn = compressedDataStart;
+                inflator.OutputBuffer = uncompressedData;
+                inflator.NextOut = 0;
+                inflator.Inflate(FlushType.Full);
+                inflator.EndInflate();
                 chunkInfo.Chunk = uncompressedData;
             }
             else
             {
                 chunkInfo.Chunk = new byte[0];
             }
+            
             return chunkInfo;
         }
-        static bool ByteArrayCompare(byte[] b1, byte[] b2)
-        {
-            // Validate buffers are the same length.
-            // This also ensures that the count does not exceed the length of either buffer.  
-            return b1.Length == b2.Length && memcmp(b1, b2, b1.Length) == 0;
-        }
+        
         public static int GetInt(byte[] data, int offset)
         {
             int i = offset;
@@ -192,16 +213,7 @@ namespace SwModelReaderCore
                 return ms.ToArray();
             }
         }
-        private void DecodeHeader(SwStorage storage)
-        {
-            var header = new byte[4];
-            this.m_stream.Read(header, 0, 4);
-            storage.Header = GetUInt(header,0);
-
-            var key = new byte[4];
-            this.m_stream.Read(key, 0, 4);
-            storage.Key = key[3];
-        }
+        
 
         public SwFileReaderResult GetStream(string streamName,out byte[] streamData)
         {
@@ -271,6 +283,11 @@ namespace SwModelReaderCore
         public void Dispose()
         {
             this.m_stream.Dispose();
+        }
+
+        public static SwModelReader Open(string path)
+        {
+            return new SwModelReader(new FileStream(path, FileMode.Open, FileAccess.Read));
         }
     }
 }

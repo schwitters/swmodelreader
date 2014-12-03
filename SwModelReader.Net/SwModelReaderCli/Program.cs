@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 using System.IO;
 
-namespace Sw2015FileReaderCli
+namespace SwModelReaderCli
 {
     class Program
     {
@@ -23,9 +23,8 @@ namespace Sw2015FileReaderCli
             {
                 outDir = args[outPosition + 1];
             }
-            using (FileStream stream = new FileStream(modelFile, FileMode.Open, FileAccess.Read))
-            {
-                using (var reader = new SwModelReaderCore.SwModelReader(stream))
+           
+                using (var reader =  SwModelReaderCore.SwModelReader.Open(modelFile))
                 {
                     string[] streamNames;
                     reader.GetAvailableStreamNames(out streamNames);
@@ -49,7 +48,7 @@ namespace Sw2015FileReaderCli
                             Console.WriteLine("Stream {0} available");
                         }
                     }
-                }
+                
 
             }
 

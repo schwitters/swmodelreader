@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwModelReaderGui", "SwModelReaderGui\SwModelReaderGui.csproj", "{9509F05A-414F-45D8-AE6F-2BE3A0CE683A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwModelReaderCore", "SwModelReaderCore\SwModelReaderCore.csproj", "{961F5094-C7F1-4B38-A8A7-343E477A6ECB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{78EC0A7D-A514-4CB9-B2C7-95369EC90047}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\NuGet.exe = .nuget\NuGet.exe
+		.nuget\NuGet.targets = .nuget\NuGet.targets
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwModelReaderUnitTest", "SwModelReaderUnitTest\SwModelReaderUnitTest.csproj", "{7FABAB02-18D0-46FF-9BFB-850C27849B80}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwModelReaderCli", "SwModelReaderCli\SwModelReaderCli.csproj", "{64A901ED-8ADB-452C-BD21-123338443C2E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9509F05A-414F-45D8-AE6F-2BE3A0CE683A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9509F05A-414F-45D8-AE6F-2BE3A0CE683A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9509F05A-414F-45D8-AE6F-2BE3A0CE683A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9509F05A-414F-45D8-AE6F-2BE3A0CE683A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{961F5094-C7F1-4B38-A8A7-343E477A6ECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{961F5094-C7F1-4B38-A8A7-343E477A6ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{961F5094-C7F1-4B38-A8A7-343E477A6ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{961F5094-C7F1-4B38-A8A7-343E477A6ECB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FABAB02-18D0-46FF-9BFB-850C27849B80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FABAB02-18D0-46FF-9BFB-850C27849B80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FABAB02-18D0-46FF-9BFB-850C27849B80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FABAB02-18D0-46FF-9BFB-850C27849B80}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64A901ED-8ADB-452C-BD21-123338443C2E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64A901ED-8ADB-452C-BD21-123338443C2E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64A901ED-8ADB-452C-BD21-123338443C2E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64A901ED-8ADB-452C-BD21-123338443C2E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

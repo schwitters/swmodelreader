@@ -6,9 +6,10 @@ Apache POI (Java) or OpenMCDF (.NET) for reading Solidworks files.
 
 This Project attempts to read data from SolidWorks 2015 Files.
 
-There are two implementations provided. .NET and Java.
+There are two implementations available :  .NET and Java.
 
 Current Status :
+
 Java implementation allows you to extract streams from SLDXXX files.
 
 ```Java
@@ -18,3 +19,14 @@ try (Sw2015FileReader reader = new Sw2015FileReader(Files.newInputStream(swModel
 	/* do something with png data */
 }
 ```
+The same in C#
+```C#
+ string swModelFile = ...;
+ using (var reader = SwModelReader.Open(swModelFile))
+ {
+    byte[] pngData;
+    reader.GetStream("PreviewPNG", out pngData);
+    // do something with your png data 
+ }
+```
+

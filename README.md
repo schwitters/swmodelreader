@@ -1,4 +1,4 @@
-Warning : The component is broken. Feel free to a fix
+Warning : The component is broken. Feel free to send a fix
 
 swmodelreader
 =============

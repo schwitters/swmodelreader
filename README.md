@@ -1,3 +1,5 @@
+Warning : The component is broken. Feel free to a fix
+
 swmodelreader
 =============
 
